@@ -8,6 +8,17 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// zeroSource is an io.Reader that returns an unlimited number of zero bytes.
+type zeroSource struct{}
+
+func (zeroSource) Read(b []byte) (n int, err error) {
+	for i := range b {
+		b[i] = 0
+	}
+
+	return len(b), nil
+}
+
 func main() {
 	//var hostKey ssh.PublicKey
 	// An SSH client is represented with a ClientConn.
@@ -16,14 +27,17 @@ func main() {
 	// implementation of AuthMethod via the Auth field in ClientConfig,
 	// and provide a HostKeyCallback.
 	config := &ssh.ClientConfig{
-		User: "pi",
+		Config: ssh.Config{
+			Rand: zeroSource{},
+		},
+		User: "xx",
 		Auth: []ssh.AuthMethod{
-			ssh.Password(""),
+			ssh.Password("xxxx"),
 		},
 		//HostKeyCallback: ssh.FixedHostKey(hostKey),
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	client, err := ssh.Dial("tcp", "10.0.0.12:22", config)
+	client, err := ssh.Dial("tcp", "127.0.0.1:10022", config)
 	if err != nil {
 		log.Fatal("Failed to dial: ", err)
 	}
