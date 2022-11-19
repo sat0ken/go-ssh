@@ -27,13 +27,17 @@ func strtoByte(str string) []byte {
 	return b
 }
 
+func intTo4byte(i int) []byte {
+	b := make([]byte, 4)
+	binary.BigEndian.PutUint32(b, uint32((i)))
+	return b
+}
+
 func printPacket(value interface{}) {
 	rv := reflect.ValueOf(value)
 	rt := rv.Type()
 
 	for i := 0; i < rv.NumField(); i++ {
-		//field := rt.Field(i)
-		//fmt.Printf("%+v\n", rv.Field(i).Type())
 		field := rt.Field(i)
 
 		switch rv.Field(i).Interface().(type) {
@@ -44,7 +48,19 @@ func printPacket(value interface{}) {
 		case string:
 			fmt.Printf("%s is %s\n", field.Name, rv.Field(i).Interface().(string))
 		}
-		//b := rv.Field(i).Interface().([]byte)
-
 	}
+}
+
+// 各構造体のフィールドが持つbyteをflatな配列にする
+func toByteArr(value interface{}) []byte {
+	rv := reflect.ValueOf(value)
+	//rt := rv.Type()
+	var arr []byte
+
+	for i := 0; i < rv.NumField(); i++ {
+		b := rv.Field(i).Interface().([]byte)
+		arr = append(arr, b...)
+	}
+
+	return arr
 }

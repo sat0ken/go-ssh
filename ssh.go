@@ -30,7 +30,7 @@ Each packet is in the following format:
 	byte[n2]  random padding; n2 = padding_length
 	byte[m]   mac (Message Authentication Code - MAC); m = mac_length
 */
-type SSHPacket struct {
+type BinaryPacket struct {
 	PacketLength  []byte
 	PaddingLength []byte
 	Payload       []byte
@@ -96,9 +96,9 @@ func ParseSSHPacket(recv []byte) {
 	ParseBinaryPacketProtocol(recv)
 }
 
-func ParseBinaryPacketProtocol(recv []byte) SSHPacket {
+func ParseBinaryPacketProtocol(recv []byte) BinaryPacket {
 	// 6. Binary Packet Protocolのパケットフォーマットに従ってパースする
-	var ssh SSHPacket
+	var ssh BinaryPacket
 	ssh.PacketLength = recv[0:4]
 	ssh.PaddingLength = recv[4:5]
 	payloadLen := sumByteArr(ssh.PacketLength) - 1
@@ -154,4 +154,20 @@ func ParseAlgorithmNegotiationPacket(payload []byte) AlgorithmNegotiationPacket 
 	anp.FirstKEXPacketFollows = payload[0:1]
 	anp.Reserved = payload[1:5]
 	return anp
+}
+
+func NewClientKeyExchangeInit() []byte {
+	keyExchange := []byte{SSH_MSG_KEXINIT}
+	keyExchange = append(keyExchange, toByteArr(NewAlgorithmsNegotiation())...)
+
+	init := BinaryPacket{
+		PacketLength:  intTo4byte(len(keyExchange) + 1 + 16),
+		PaddingLength: []byte{0x10}, // Padding = 16
+		Payload:       keyExchange,
+		Padding: []byte{
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+	}
+
+	return toByteArr(init)
 }
