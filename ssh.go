@@ -5,98 +5,15 @@ import (
 	"fmt"
 )
 
-const (
-	SSH_MSG_DISCONNECT      = 1
-	SSH_MSG_IGNORE          = 2
-	SSH_MSG_UNIMPLEMENTED   = 3
-	SSH_MSG_DEBUG           = 4
-	SSH_MSG_SERVICE_REQUEST = 5
-	SSH_MSG_SERVICE_ACCEPT  = 6
-	SSH_MSG_KEXINIT         = 20
-)
+func ParseBinaryPacketProtocol(recv []byte) interface{} {
 
-var clientSSHString = []byte(`SSH-2.0-OpenSSH_8.9p1 Ubuntu-3`)
-
-/*
-https://tex2e.github.io/rfc-translater/html/rfc4253.html
-6. Binary Packet Protocol
-Each packet is in the following format:
-
-各パケットは次の形式です。
-
-	uint32    packet_length
-	byte      padding_length
-	byte[n1]  payload; n1 = packet_length - padding_length - 1
-	byte[n2]  random padding; n2 = padding_length
-	byte[m]   mac (Message Authentication Code - MAC); m = mac_length
-*/
-type BinaryPacket struct {
-	PacketLength  []byte
-	PaddingLength []byte
-	Payload       []byte
-	Padding       []byte
-}
-
-/*
-RFC4253
-7.1.  Algorithm Negotiation
-
-	Key exchange begins by each side sending the following packet:
-
-	   byte         SSH_MSG_KEXINIT
-	   byte[16]     cookie (random bytes)
-	   name-list    kex_algorithms
-	   name-list    server_host_key_algorithms
-	   name-list    encryption_algorithms_client_to_server
-	   name-list    encryption_algorithms_server_to_client
-	   name-list    mac_algorithms_client_to_server
-	   name-list    mac_algorithms_server_to_client
-	   name-list    compression_algorithms_client_to_server
-	   name-list    compression_algorithms_server_to_client
-	   name-list    languages_client_to_server
-	   name-list    languages_server_to_client
-	   boolean      first_kex_packet_follows
-	   uint32       0 (reserved for future extension)
-*/
-type AlgorithmNegotiationPacket struct {
-	SSHMsgType                                []byte
-	Cookie                                    []byte
-	KeyAlgorithmsLength                       uint
-	KeyAlgorithms                             string
-	ServerHostKeyAlgorithmsLength             uint
-	ServerHostKeyAlgorithms                   string
-	EncryptionAlgorithmsClientToServerLength  uint
-	EncryptionAlgorithmsClientToServer        string
-	EncryptionAlgorithmsServerToClientLength  uint
-	EncryptionAlgorithmsServerToClient        string
-	MacAlgorithmsClientToServerLength         uint
-	MacAlgorithmsClientToServer               string
-	MacAlgorithmsServerToClientLength         uint
-	MacAlgorithmsServerToClient               string
-	CompressionAlgorithmsClientToServerLength uint
-	CompressionAlgorithmsClientToServer       string
-	CompressionAlgorithmsServerToClientLength uint
-	CompressionAlgorithmsServerToClient       string
-	LanguageClientToServerLength              uint
-	LanguageClientToServer                    []byte
-	LanguageServerToClientLength              uint
-	LanguageServerToClient                    []byte
-	FirstKEXPacketFollows                     []byte
-	Reserved                                  []byte
-}
-
-func ParseSSHPacket(recv []byte) {
 	// https://tex2e.github.io/rfc-translater/html/rfc4253.html
 	// 4.2. プロトコルバージョン交換
 	// 末尾の2byteがCRLFだったらプロトコルバージョン交換の文字
 	if bytes.Equal(recv[len(recv)-2:len(recv)], []byte{0x0d, 0x0a}) {
-		fmt.Printf("Protocol Version Exchange : %s\n", recv[:len(recv)-2])
+		return fmt.Sprintf("Protocol Version Exchange : %s\n", recv[:len(recv)-2])
 	}
 
-	ParseBinaryPacketProtocol(recv)
-}
-
-func ParseBinaryPacketProtocol(recv []byte) BinaryPacket {
 	// 6. Binary Packet Protocolのパケットフォーマットに従ってパースする
 	var ssh BinaryPacket
 	ssh.PacketLength = recv[0:4]
@@ -114,7 +31,18 @@ func parseNameList(payload []byte) (b []byte, length uint, name string) {
 	return payload[nameStrLen:], length, fmt.Sprintf("%s", payload[4:4+nameStrLen])
 }
 
-func ParseAlgorithmNegotiationPacket(payload []byte) AlgorithmNegotiationPacket {
+func ParseSSHPayload(payload []byte) interface{} {
+	var i interface{}
+	switch payload[0] {
+	case SSH_MSG_KEXINIT:
+		i = readAlgorithmNegotiationPacket(payload)
+	case SSH_MSG_ECDHKey_ExchangeReply:
+		i = readECDHKeyExchangeReply(payload)
+	}
+	return i
+}
+
+func readAlgorithmNegotiationPacket(payload []byte) AlgorithmNegotiationPacket {
 	var anp AlgorithmNegotiationPacket
 	anp.SSHMsgType = payload[0:1]
 	anp.Cookie = payload[1:17]
@@ -156,18 +84,46 @@ func ParseAlgorithmNegotiationPacket(payload []byte) AlgorithmNegotiationPacket 
 	return anp
 }
 
-func NewClientKeyExchangeInit() []byte {
-	keyExchange := []byte{SSH_MSG_KEXINIT}
-	keyExchange = append(keyExchange, toByteArr(NewAlgorithmsNegotiation())...)
+func readECDHKeyExchangeReply(payload []byte) (ecdhkey ECDHEKeyExchaneReply) {
+	var length uint
+	ecdhkey.SSHMsgType = payload[0:1]
+	ecdhkey.KEXHostKey.HostKeyLength = payload[1:5]
+	ecdhkey.KEXHostKey.HostKeyTypeLength = payload[5:9]
 
-	init := BinaryPacket{
-		PacketLength:  intTo4byte(len(keyExchange) + 1 + 16),
-		PaddingLength: []byte{0x10}, // Padding = 16
-		Payload:       keyExchange,
-		Padding: []byte{
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-	}
+	length = sumByteArr(ecdhkey.KEXHostKey.HostKeyTypeLength)
+	ecdhkey.KEXHostKey.HostKeyType = payload[9 : 9+length]
+	// パケットを縮める
+	payload = payload[9+length:]
+	ecdhkey.KEXHostKey.ECDSACurveIdentifierLength = payload[0:4]
+	length = sumByteArr(
+		ecdhkey.KEXHostKey.ECDSACurveIdentifierLength)
+	ecdhkey.KEXHostKey.ECDSACurveIdentifier = payload[4 : 4+length]
+	// パケットを縮める
+	payload = payload[4+length:]
+	ecdhkey.KEXHostKey.ECDSAPublicKeyLength = payload[0:4]
+	length = sumByteArr(
+		ecdhkey.KEXHostKey.ECDSAPublicKeyLength)
+	ecdhkey.KEXHostKey.ECDSAPublicKey = payload[4 : 4+length]
+	// パケットを縮める
+	payload = payload[4+length:]
+	ecdhkey.ECDHEServerEphemeralPublicKeyLength = payload[0:4]
+	length = sumByteArr(ecdhkey.ECDHEServerEphemeralPublicKeyLength)
+	ecdhkey.ECDHEServerEphemeralPublicKey = payload[4 : 4+length]
+	// パケットを縮める
+	payload = payload[4+length:]
+	ecdhkey.KEXHostSignature.HostSignatureLength = payload[0:4]
+	ecdhkey.KEXHostSignature.HostSignatureTypeLength = payload[4:8]
+	length = sumByteArr(
+		ecdhkey.KEXHostSignature.HostSignatureTypeLength)
+	ecdhkey.KEXHostSignature.HostSignatureType = payload[8 : 8+length]
+	// パケットを縮める
+	payload = payload[8+length:]
+	remainlen := sumByteArr(
+		ecdhkey.KEXHostSignature.HostSignatureLength)
+	remainlen -= uint(len(ecdhkey.KEXHostSignature.HostSignatureTypeLength))
+	remainlen -= uint(len(ecdhkey.KEXHostSignature.HostSignatureType))
 
-	return toByteArr(init)
+	ecdhkey.KEXHostSignature.HostSignature = payload[:remainlen]
+
+	return ecdhkey
 }

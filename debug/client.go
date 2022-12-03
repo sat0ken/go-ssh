@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"os"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -30,14 +31,14 @@ func main() {
 		Config: ssh.Config{
 			Rand: zeroSource{},
 		},
-		User: "xx",
+		User: os.Getenv("user"),
 		Auth: []ssh.AuthMethod{
-			ssh.Password("xxxx"),
+			ssh.Password(os.Getenv("password")),
 		},
 		//HostKeyCallback: ssh.FixedHostKey(hostKey),
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	client, err := ssh.Dial("tcp", "127.0.0.1:10022", config)
+	client, err := ssh.Dial("tcp", os.Getenv("ip"), config)
 	if err != nil {
 		log.Fatal("Failed to dial: ", err)
 	}

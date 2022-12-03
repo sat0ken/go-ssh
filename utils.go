@@ -64,3 +64,11 @@ func toByteArr(value interface{}) []byte {
 
 	return arr
 }
+
+func noRandomByte(length int) []byte {
+	b := make([]byte, length)
+	for i := 0; i < length; i++ {
+		b[i] = 0x00
+	}
+	return b
+}
