@@ -15,6 +15,12 @@ const (
 
 var clientSSHString = []byte(`SSH-2.0-OpenSSH_8.9p1 Ubuntu-3`)
 
+type SSHPacket struct {
+	RawPacket      []byte
+	SequenceNumber int
+	BinaryPacket
+}
+
 /*
 https://tex2e.github.io/rfc-translater/html/rfc4253.html
 6. Binary Packet Protocol

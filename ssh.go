@@ -5,24 +5,29 @@ import (
 	"fmt"
 )
 
-func ParseBinaryPacketProtocol(recv []byte) interface{} {
+func ParseBinaryPacketProtocol(recv []byte) (sshPacket SSHPacket) {
 
 	// https://tex2e.github.io/rfc-translater/html/rfc4253.html
 	// 4.2. プロトコルバージョン交換
 	// 末尾の2byteがCRLFだったらプロトコルバージョン交換の文字
 	if bytes.Equal(recv[len(recv)-2:len(recv)], []byte{0x0d, 0x0a}) {
-		return fmt.Sprintf("Protocol Version Exchange : %s\n", recv[:len(recv)-2])
+		sshPacket.RawPacket = recv[:len(recv)-2]
+		fmt.Printf("Protocol Version Exchange : %s\n", recv[:len(recv)-2])
+		return sshPacket
 	}
 
 	// 6. Binary Packet Protocolのパケットフォーマットに従ってパースする
-	var ssh BinaryPacket
-	ssh.PacketLength = recv[0:4]
-	ssh.PaddingLength = recv[4:5]
-	payloadLen := sumByteArr(ssh.PacketLength) - 1
+	var bp BinaryPacket
+	sshPacket.RawPacket = append(sshPacket.RawPacket, recv...)
+	bp.PacketLength = recv[0:4]
+	bp.PaddingLength = recv[4:5]
+	payloadLen := sumByteArr(bp.PacketLength) - 1
 
-	ssh.Payload = recv[5 : 5+payloadLen]
-	ssh.Padding = recv[len(recv)-int(ssh.PaddingLength[0]):]
-	return ssh
+	bp.Payload = recv[5 : 5+payloadLen]
+	bp.Padding = recv[len(recv)-int(bp.PaddingLength[0]):]
+	sshPacket.BinaryPacket = bp
+
+	return sshPacket
 }
 
 func parseNameList(payload []byte) (b []byte, length uint, name string) {
