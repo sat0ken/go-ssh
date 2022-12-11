@@ -72,3 +72,8 @@ func noRandomByte(length int) []byte {
 	}
 	return b
 }
+
+func copyTo32Byte(src []byte) (dst [32]byte) {
+	copy(dst[:], src)
+	return dst
+}

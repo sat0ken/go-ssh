@@ -3,31 +3,39 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"golang.org/x/crypto/curve25519"
 )
 
-func ParseBinaryPacketProtocol(recv []byte) (sshPacket SSHPacket) {
+func ParseBinaryPacketProtocol(recv []byte) (binaryPacket []BinaryPacket) {
 
-	// https://tex2e.github.io/rfc-translater/html/rfc4253.html
-	// 4.2. プロトコルバージョン交換
-	// 末尾の2byteがCRLFだったらプロトコルバージョン交換の文字
-	if bytes.Equal(recv[len(recv)-2:len(recv)], []byte{0x0d, 0x0a}) {
-		sshPacket.RawPacket = recv[:len(recv)-2]
-		fmt.Printf("Protocol Version Exchange : %s\n", recv[:len(recv)-2])
-		return sshPacket
+	for {
+		if len(recv) == 0 {
+			break
+		} else {
+			var bp BinaryPacket
+			// https://tex2e.github.io/rfc-translater/html/rfc4253.html
+			// 4.2. プロトコルバージョン交換
+			// 末尾の2byteがCRLFだったらプロトコルバージョン交換の文字
+			if bytes.Equal(recv[len(recv)-2:len(recv)], []byte{0x0d, 0x0a}) {
+				fmt.Printf("Protocol Version Exchange : %s\n", recv[:len(recv)-2])
+				bp.Payload = recv[:len(recv)-2]
+				binaryPacket = append(binaryPacket, bp)
+				break
+			}
+			// 6. Binary Packet Protocolのパケットフォーマットに従ってパースする
+			bp.PacketLength = recv[0:4]
+			bp.PaddingLength = recv[4:5]
+			payloadLen := sumByteArr(bp.PacketLength) - 1
+
+			bp.Payload = recv[5 : 5+payloadLen-uint(bp.PaddingLength[0])]
+			bp.Padding = recv[len(recv)-int(bp.PaddingLength[0]):]
+			binaryPacket = append(binaryPacket, bp)
+			// パケットを縮める
+			recv = recv[sumByteArr(bp.PacketLength)+4:]
+		}
 	}
 
-	// 6. Binary Packet Protocolのパケットフォーマットに従ってパースする
-	var bp BinaryPacket
-	sshPacket.RawPacket = append(sshPacket.RawPacket, recv...)
-	bp.PacketLength = recv[0:4]
-	bp.PaddingLength = recv[4:5]
-	payloadLen := sumByteArr(bp.PacketLength) - 1
-
-	bp.Payload = recv[5 : 5+payloadLen]
-	bp.Padding = recv[len(recv)-int(bp.PaddingLength[0]):]
-	sshPacket.BinaryPacket = bp
-
-	return sshPacket
+	return binaryPacket
 }
 
 func parseNameList(payload []byte) (b []byte, length uint, name string) {
@@ -36,15 +44,19 @@ func parseNameList(payload []byte) (b []byte, length uint, name string) {
 	return payload[nameStrLen:], length, fmt.Sprintf("%s", payload[4:4+nameStrLen])
 }
 
-func ParseSSHPayload(payload []byte) interface{} {
-	var i interface{}
+func ParseSSHPayload(payload []byte) (msgType int, i interface{}) {
 	switch payload[0] {
 	case SSH_MSG_KEXINIT:
 		i = readAlgorithmNegotiationPacket(payload)
+		msgType = SSH_MSG_KEXINIT
 	case SSH_MSG_ECDHKey_ExchangeReply:
 		i = readECDHKeyExchangeReply(payload)
+		msgType = SSH_MSG_ECDHKey_ExchangeReply
+	case SSH_MSG_NEWKey:
+		i = true
+		msgType = SSH_MSG_NEWKey
 	}
-	return i
+	return msgType, i
 }
 
 func readAlgorithmNegotiationPacket(payload []byte) AlgorithmNegotiationPacket {
@@ -131,4 +143,11 @@ func readECDHKeyExchangeReply(payload []byte) (ecdhkey ECDHEKeyExchaneReply) {
 	ecdhkey.KEXHostSignature.HostSignature = payload[:remainlen]
 
 	return ecdhkey
+}
+
+func createSecret(clientPriv, serverPub [32]byte) (secret [32]byte) {
+	curve25519.ScalarMult(&secret, &clientPriv, &serverPub)
+	fmt.Printf("client is %x, server is %x\n", clientPriv, serverPub)
+	fmt.Printf("secret is %x\n", secret)
+	return secret
 }
