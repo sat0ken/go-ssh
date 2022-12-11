@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"fmt"
 )
@@ -16,21 +17,24 @@ func main() {
 	serverVersion := strtoByte("5353482d322e302d4f70656e5353485f372e340d0a")
 	binaryPacket := ParseBinaryPacketProtocol(serverVersion)
 
+	// Client Version
 	packet = append(packet, clientSSHVersionString...)
+	// Server Version
 	packet = append(packet, binaryPacket[0].Payload...)
-
+	// Client MSG Init
 	binaryPacket = ParseBinaryPacketProtocol(strtoByte(clientInit))
 	packet = append(packet, binaryPacket[0].Payload...)
-
+	// Server MSG Init
 	binaryPacket = ParseBinaryPacketProtocol(strtoByte(serverinit))
 	packet = append(packet, binaryPacket[0].Payload...)
-
+	// ECHDE Reply
 	binaryPacket = ParseBinaryPacketProtocol(strtoByte("000001040a1f000000680000001365636473612d736861322d6e69737470323536000000086e6973747032353600000041049e55bbe9a7b90353ff795b4a8733e6f24a4950c216bc855921b2e0ab46fd86a490a7b6a0d9d99f2ba7057336c1efeb2c98ed02a1049a3106e44cdd0ea1cad1ef00000020e12bbd7bf5c136ae9aad535ca4b8b49d53369971196648a6838d5511eeec3c76000000640000001365636473612d736861322d6e697374703235360000004900000021008c11f0462f9226714d85e3c195a5243ec5e11301028b468e53d9d34a4ab9a9f90000002062274a5060f0f1ce8501599b7ceb600b9a414e1184c33dcbd0845897dd1cac3400000000000000000000"))
-
 	_, i := ParseSSHPayload(binaryPacket[0].Payload)
-
+	// Kex Host Key
 	packet = append(packet, toByteArr(i.(ECDHEKeyExchaneReply).KEXHostKey)[4:]...)
+	// Client ECDHE Public Key
 	packet = append(packet, strtoByte(clientECDHEPubKey)...)
+	// Server ECDHE Public Key
 	packet = append(packet, i.(ECDHEKeyExchaneReply).ECDHEServerEphemeralPublicKey...)
 
 	h := sha256.New()
@@ -48,6 +52,11 @@ func main() {
 	packet = append(packet, []byte{0x00}...)
 	packet = append(packet, secret[:]...)
 	fmt.Printf("%x\n", packet)
+
+	b := bytes.Buffer{}
+	b.Write(packet)
+
+	fmt.Printf("packet is %x\n", b.Bytes())
 
 	h.Write(intTo4byte(len(secret)))
 	h.Write([]byte{0x00})

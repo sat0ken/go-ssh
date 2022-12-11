@@ -29,7 +29,7 @@ func main() {
 	// and provide a HostKeyCallback.
 	config := &ssh.ClientConfig{
 		Config: ssh.Config{
-			//Rand: zeroSource{},
+			Rand: zeroSource{},
 		},
 		User: os.Getenv("user"),
 		Auth: []ssh.AuthMethod{
