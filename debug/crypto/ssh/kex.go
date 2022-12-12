@@ -5,6 +5,7 @@
 package ssh
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -13,10 +14,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
-	"math/big"
-	"log"
 	"golang.org/x/crypto/curve25519"
+	"io"
+	"log"
+	"math/big"
 )
 
 const (
@@ -35,7 +36,6 @@ const (
 	kexAlgoDHGEXSHA1   = "diffie-hellman-group-exchange-sha1"
 	kexAlgoDHGEXSHA256 = "diffie-hellman-group-exchange-sha256"
 )
-
 
 // kexResult captures the outcome of a key exchange.
 type kexResult struct {
@@ -229,7 +229,7 @@ func (kex *ecdh) Client(c packetConn, rand io.Reader, magics *handshakeMagics) (
 	if err != nil {
 		return nil, err
 	}
-    log.Printf("ephKey is %+v\n", ephKey)
+	log.Printf("ephKey is %+v\n", ephKey)
 
 	kexInit := kexECDHInitMsg{
 		ClientPubKey: elliptic.Marshal(kex.curve, ephKey.PublicKey.X, ephKey.PublicKey.Y),
@@ -470,7 +470,7 @@ func (kex *curve25519sha256) Client(c packetConn, rand io.Reader, magics *handsh
 		return nil, err
 	}
 	log.SetFlags(log.Lshortfile)
-    log.Printf("kp.pub is %x, kp.priv is %x\n", kp.pub, kp.priv)
+	log.Printf("kp.pub is %x, kp.priv is %x\n", kp.pub, kp.priv)
 	if err := c.writePacket(Marshal(&kexECDHInitMsg{kp.pub[:]})); err != nil {
 		return nil, err
 	}
@@ -497,16 +497,24 @@ func (kex *curve25519sha256) Client(c packetConn, rand io.Reader, magics *handsh
 		return nil, errors.New("ssh: peer's curve25519 public value has wrong order")
 	}
 	log.Printf("secret is %x\n", secret[:])
+	b := bytes.Buffer{}
 
 	h := crypto.SHA256.New()
 	magics.write(h)
-	log.Printf("magics.write clientVersion is %x\n", magics.clientVersion)
-	log.Printf("magics.write serverVersion is %x\n", magics.serverVersion)
-	log.Printf("magics.write clientKexInit is %x\n", magics.clientKexInit)
-	log.Printf("magics.write serverKexInit is %x\n", magics.serverKexInit)
+	b.Write(magics.clientVersion)
+	b.Write(magics.serverVersion)
+	b.Write(magics.clientKexInit)
+	b.Write(magics.serverKexInit)
+	//log.Printf("magics.write clientVersion is %x\n", magics.clientVersion)
+	//log.Printf("magics.write serverVersion is %x\n", magics.serverVersion)
+	//log.Printf("magics.write clientKexInit is %x\n", magics.clientKexInit)
+	//log.Printf("magics.write serverKexInit is %x\n", magics.serverKexInit)
 	writeString(h, reply.HostKey)
 	writeString(h, kp.pub[:])
 	writeString(h, reply.EphemeralPubKey)
+	b.Write(reply.HostKey)
+	b.Write(kp.pub[:])
+	b.Write(reply.EphemeralPubKey)
 	log.Printf("Hostkey is %x, kp.pub is %x, EphemeralPubKey is %x\n", reply.HostKey, kp.pub[:], reply.EphemeralPubKey)
 	log.Printf("secret is %x\n", secret[:])
 	ki := new(big.Int).SetBytes(secret[:])
@@ -514,7 +522,9 @@ func (kex *curve25519sha256) Client(c packetConn, rand io.Reader, magics *handsh
 	K := make([]byte, intLength(ki))
 	marshalInt(K, ki)
 	h.Write(K)
+	b.Write(K)
 
+	log.Printf("Input H is %x\n", b.Bytes())
 	log.Printf("H is %x, K is %x\n", h.Sum(nil), K)
 
 	return &kexResult{
