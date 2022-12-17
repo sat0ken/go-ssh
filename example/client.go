@@ -28,6 +28,6 @@ func main() {
 
 	// recvしたパケットをパース
 	_, msgInit := gossh.ParseBinaryPacketPayload(packet[0].Payload)
-	fmt.Printf("Server SSH_MSG_INIT is %+v\n", msgInit)
+	fmt.Printf("Server SSH_MSG_INIT is %+v\n", msgInit.(gossh.AlgorithmNegotiationPacket))
 
 }

@@ -5,16 +5,31 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
+	"runtime"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
 func main() {
+
+	var sshkeyfile string
+	var idrsa string
+
+	switch runtime.GOOS {
+	case "windows":
+		sshkeyfile = filepath.Join(os.Getenv("USERPROFILE"), ".ssh", "authorized_keys")
+		idrsa = filepath.Join(os.Getenv("USERPROFILE"), ".ssh", "id_rsa")
+	case "linux":
+		sshkeyfile = filepath.Join(os.Getenv("HOME"), ".ssh", "authorized_keys")
+		idrsa = filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa")
+	}
+
 	// Public key authentication is done by comparing
 	// the public key of a received connection
 	// with the entries in the authorized_keys file.
-	authorizedKeysBytes, err := os.ReadFile(fmt.Sprintf("%s/.ssh/authorized_keys", os.Getenv("HOME")))
+	authorizedKeysBytes, err := os.ReadFile(sshkeyfile)
 	if err != nil {
 		log.Fatalf("Failed to load authorized_keys, err: %v", err)
 	}
@@ -57,7 +72,7 @@ func main() {
 		},
 	}
 
-	privateBytes, err := os.ReadFile(fmt.Sprintf("%s/.ssh/id_rsa", os.Getenv("HOME")))
+	privateBytes, err := os.ReadFile(idrsa)
 	if err != nil {
 		log.Fatal("Failed to load private key: ", err)
 	}
