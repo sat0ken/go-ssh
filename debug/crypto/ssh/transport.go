@@ -191,7 +191,7 @@ func (s *connectionState) writePacket(w *bufio.Writer, rand io.Reader, packet []
 		case cipher := <-s.pendingKeyChange:
 			s.packetCipher = cipher
 		default:
-			panic("ssh: no key material for msgNewKeys")
+			log.Fatal("ssh: no key material for msgNewKeys")
 		}
 	}
 	return err
@@ -285,6 +285,8 @@ func generateKeyMaterial(out, tag []byte, r *kexResult) {
 			digestsSoFar = append(digestsSoFar, digest...)
 		}
 	}
+	log.SetFlags(log.Lshortfile)
+	log.Printf("tag is %s, digest is %x\n", digestsSoFar, string(tag))
 }
 
 const packageVersion = "SSH-2.0-Go"

@@ -1,4 +1,4 @@
-package main
+package gossh
 
 import "golang.org/x/crypto/curve25519"
 

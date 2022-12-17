@@ -1,4 +1,4 @@
-package main
+package gossh
 
 const (
 	SSH_MSG_DISCONNECT            = 1

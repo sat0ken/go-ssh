@@ -1,4 +1,4 @@
-module go-ssh
+module gossh
 
 go 1.19
 

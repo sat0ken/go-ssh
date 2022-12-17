@@ -1,4 +1,4 @@
-package main
+package gossh
 
 import (
 	"encoding/binary"
@@ -20,6 +20,10 @@ func sumByteArr(arr []byte) uint {
 }
 
 func strtoByte(str string) []byte {
+	return StrtoByte(str)
+}
+
+func StrtoByte(str string) []byte {
 	b, err := hex.DecodeString(str)
 	if err != nil {
 		log.Fatal(err)
@@ -28,6 +32,10 @@ func strtoByte(str string) []byte {
 }
 
 func intTo4byte(i int) []byte {
+	return IntTo4byte(i)
+}
+
+func IntTo4byte(i int) []byte {
 	b := make([]byte, 4)
 	binary.BigEndian.PutUint32(b, uint32((i)))
 	return b
@@ -51,8 +59,12 @@ func printPacket(value interface{}) {
 	}
 }
 
-// 各構造体のフィールドが持つbyteをflatな配列にする
 func toByteArr(value interface{}) []byte {
+	return ToByteArr(value)
+}
+
+// ToByteArr 各構造体のフィールドが持つbyteをflatな配列にする
+func ToByteArr(value interface{}) []byte {
 	rv := reflect.ValueOf(value)
 	//rt := rv.Type()
 	var arr []byte
@@ -73,7 +85,7 @@ func noRandomByte(length int) []byte {
 	return b
 }
 
-func copyTo32Byte(src []byte) (dst [32]byte) {
+func CopyTo32Byte(src []byte) (dst [32]byte) {
 	copy(dst[:], src)
 	return dst
 }

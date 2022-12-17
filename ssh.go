@@ -1,4 +1,4 @@
-package main
+package gossh
 
 import (
 	"bytes"
@@ -145,7 +145,7 @@ func readECDHKeyExchangeReply(payload []byte) (ecdhkey ECDHEKeyExchaneReply) {
 	return ecdhkey
 }
 
-func createSecret(clientPriv, serverPub [32]byte) (secret [32]byte) {
+func CreateSecret(clientPriv, serverPub [32]byte) (secret [32]byte) {
 	curve25519.ScalarMult(&secret, &clientPriv, &serverPub)
 	fmt.Printf("client is %x, server is %x\n", clientPriv, serverPub)
 	fmt.Printf("secret is %x\n", secret)
