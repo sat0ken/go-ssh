@@ -6,7 +6,7 @@ import (
 	"golang.org/x/crypto/curve25519"
 )
 
-func ParseBinaryPacketProtocol(recv []byte) (binaryPacket []BinaryPacket) {
+func ParseSSHPacket(recv []byte) (binaryPacket []BinaryPacket) {
 
 	for {
 		if len(recv) == 0 {
@@ -43,7 +43,7 @@ func parseNameList(payload []byte) (b []byte, length uint, name string) {
 	return payload[nameStrLen:], length, fmt.Sprintf("%s", payload[4:4+nameStrLen])
 }
 
-func ParseSSHPayload(payload []byte) (msgType int, i interface{}) {
+func ParseBinaryPacketPayload(payload []byte) (msgType int, i interface{}) {
 	switch payload[0] {
 	case SSH_MSG_KEXINIT:
 		i = readAlgorithmNegotiationPacket(payload)

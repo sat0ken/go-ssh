@@ -17,21 +17,21 @@ func main() {
 
 	var packet []byte
 	serverVersion := gossh.StrtoByte("5353482d322e302d4f70656e5353485f362e37703120526173706269616e2d352b6465623875310d0a")
-	binaryPacket := gossh.ParseBinaryPacketProtocol(serverVersion)
+	binaryPacket := gossh.ParseSSHPacket(serverVersion)
 
 	// Client Version
 	packet = append(packet, gossh.StrtoByte(clientWinVersion)...)
 	// Server Version
 	packet = append(packet, binaryPacket[0].Payload...)
 	// Client MSG Init
-	binaryPacket = gossh.ParseBinaryPacketProtocol(gossh.StrtoByte(clientInit))
+	binaryPacket = gossh.ParseSSHPacket(gossh.StrtoByte(clientInit))
 	packet = append(packet, binaryPacket[0].Payload...)
 	// Server MSG Init
-	binaryPacket = gossh.ParseBinaryPacketProtocol(gossh.StrtoByte(serverinit))
+	binaryPacket = gossh.ParseSSHPacket(gossh.StrtoByte(serverinit))
 	packet = append(packet, binaryPacket[0].Payload...)
 	// ECHDE Reply
-	binaryPacket = gossh.ParseBinaryPacketProtocol(gossh.StrtoByte("00000104091f000000680000001365636473612d736861322d6e69737470323536000000086e6973747032353600000041049e55bbe9a7b90353ff795b4a8733e6f24a4950c216bc855921b2e0ab46fd86a490a7b6a0d9d99f2ba7057336c1efeb2c98ed02a1049a3106e44cdd0ea1cad1ef000000209371bfdb45498fbb77c97f085f85408ac13503f76023987e155b43fbbaad8a0f000000650000001365636473612d736861322d6e697374703235360000004a0000002100b273b2e0c17b15f7ddb0f24e00e54e0cd8bbb17e44fbc90dcf77cceb381811690000002100bfc5547f83ce06e79fc6bc39ed3061d64569f63250d4f8296d74c2ba80b4ab43000000000000000000"))
-	_, i := gossh.ParseSSHPayload(binaryPacket[0].Payload)
+	binaryPacket = gossh.ParseSSHPacket(gossh.StrtoByte("00000104091f000000680000001365636473612d736861322d6e69737470323536000000086e6973747032353600000041049e55bbe9a7b90353ff795b4a8733e6f24a4950c216bc855921b2e0ab46fd86a490a7b6a0d9d99f2ba7057336c1efeb2c98ed02a1049a3106e44cdd0ea1cad1ef000000209371bfdb45498fbb77c97f085f85408ac13503f76023987e155b43fbbaad8a0f000000650000001365636473612d736861322d6e697374703235360000004a0000002100b273b2e0c17b15f7ddb0f24e00e54e0cd8bbb17e44fbc90dcf77cceb381811690000002100bfc5547f83ce06e79fc6bc39ed3061d64569f63250d4f8296d74c2ba80b4ab43000000000000000000"))
+	_, i := gossh.ParseBinaryPacketPayload(binaryPacket[0].Payload)
 	// Kex Host Key
 	packet = append(packet, gossh.ToByteArr(i.(gossh.ECDHEKeyExchaneReply).KEXHostKey)[4:]...)
 	// Client ECDHE Public Key
