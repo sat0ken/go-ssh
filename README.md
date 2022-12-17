@@ -35,3 +35,8 @@ SSH接続の流れと各RFCの対応
 3.1 ユーザ認証(公開鍵orパスワード)  
 4. RFC4254 コネクションプロトコル  
 4.1 コマンド実行orポートフォワードorx11転送
+
+参考
+
+https://www.brainkart.com/article/Secure-Shell-%28SSH%29_8483/
+https://medium.com/@hellomudit/understanding-ssh-workflow-66a0e8d4bf65

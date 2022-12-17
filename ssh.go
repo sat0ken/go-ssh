@@ -17,7 +17,6 @@ func ParseBinaryPacketProtocol(recv []byte) (binaryPacket []BinaryPacket) {
 			// 4.2. プロトコルバージョン交換
 			// 末尾の2byteがCRLFだったらプロトコルバージョン交換の文字
 			if bytes.Equal(recv[len(recv)-2:len(recv)], []byte{0x0d, 0x0a}) {
-				fmt.Printf("Protocol Version Exchange : %s\n", recv[:len(recv)-2])
 				bp.Payload = recv[:len(recv)-2]
 				binaryPacket = append(binaryPacket, bp)
 				break

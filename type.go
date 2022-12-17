@@ -13,7 +13,7 @@ const (
 	SSH_MSG_ECDHKey_ExchangeReply = 31
 )
 
-var clientSSHVersionString = []byte(`SSH-2.0-OpenSSH_8.9p1 Ubuntu-3`)
+var ClientSSHVersionString = []byte(`SSH-2.0-OpenSSH_8.9p1 Ubuntu-3`)
 
 type SSHPacket struct {
 	RawPacket      []byte

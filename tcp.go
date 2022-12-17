@@ -14,11 +14,11 @@ func ConnTCP(server string, port int) net.Conn {
 	return conn
 }
 
-func WriteTCP(conn net.Conn, data []byte) {
+func WriteTCP(conn net.Conn, data []byte) []byte {
 	buf := make([]byte, 65535)
 
 	conn.Write(data)
 	n, _ := conn.Read(buf)
 
-	fmt.Printf("recv is %x\n", buf[:n])
+	return buf[:n]
 }
