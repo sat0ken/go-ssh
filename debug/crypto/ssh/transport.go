@@ -247,8 +247,11 @@ func newPacketCipher(d direction, algs directionAlgorithms, kex *kexResult) (pac
 	iv := make([]byte, cipherMode.ivSize)
 	key := make([]byte, cipherMode.keySize)
 
+	log.SetFlags(log.Lshortfile)
 	generateKeyMaterial(iv, d.ivTag, kex)
+	log.Printf("generateKeyMaterial iv is %x\n", iv)
 	generateKeyMaterial(key, d.keyTag, kex)
+	log.Printf("generateKeyMaterial key is %x\n", key)
 
 	var macKey []byte
 	if !aeadCiphers[algs.Cipher] {
@@ -286,7 +289,7 @@ func generateKeyMaterial(out, tag []byte, r *kexResult) {
 		}
 	}
 	log.SetFlags(log.Lshortfile)
-	log.Printf("tag is %s, digest is %x\n", digestsSoFar, string(tag))
+	log.Printf("out is %x, tag is %s\n", out, string(tag))
 }
 
 const packageVersion = "SSH-2.0-Go"

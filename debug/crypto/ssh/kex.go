@@ -501,20 +501,16 @@ func (kex *curve25519sha256) Client(c packetConn, rand io.Reader, magics *handsh
 
 	h := crypto.SHA256.New()
 	magics.write(h)
-	b.Write(magics.clientVersion)
-	b.Write(magics.serverVersion)
-	b.Write(magics.clientKexInit)
-	b.Write(magics.serverKexInit)
-	//log.Printf("magics.write clientVersion is %x\n", magics.clientVersion)
-	//log.Printf("magics.write serverVersion is %x\n", magics.serverVersion)
-	//log.Printf("magics.write clientKexInit is %x\n", magics.clientKexInit)
-	//log.Printf("magics.write serverKexInit is %x\n", magics.serverKexInit)
+	magics.write(&b)
+
 	writeString(h, reply.HostKey)
 	writeString(h, kp.pub[:])
 	writeString(h, reply.EphemeralPubKey)
-	b.Write(reply.HostKey)
-	b.Write(kp.pub[:])
-	b.Write(reply.EphemeralPubKey)
+	// To debug
+	writeString(&b, reply.HostKey)
+	writeString(&b, kp.pub[:])
+	writeString(&b, reply.EphemeralPubKey)
+
 	log.Printf("Hostkey is %x, kp.pub is %x, EphemeralPubKey is %x\n", reply.HostKey, kp.pub[:], reply.EphemeralPubKey)
 	log.Printf("secret is %x\n", secret[:])
 	ki := new(big.Int).SetBytes(secret[:])

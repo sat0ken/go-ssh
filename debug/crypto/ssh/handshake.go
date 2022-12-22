@@ -5,7 +5,6 @@
 package ssh
 
 import (
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
@@ -23,6 +22,7 @@ const debugHandshake = true
 // primarily for testing: setting chanSize=0 uncovers deadlocks more
 // quickly.
 const chanSize = 16
+
 // keyingTransport is a packet based transport that supports key
 // changes. It need not be thread-safe. It should pass through
 // msgNewKeys in both directions.
@@ -452,7 +452,8 @@ func (t *handshakeTransport) sendKexInit() error {
 		CompressionClientServer: supportedCompressions,
 		CompressionServerClient: supportedCompressions,
 	}
-	io.ReadFull(rand.Reader, msg.Cookie[:])
+	// ssh.ConfigのRandに変更、cookieをゼロにするため
+	io.ReadFull(t.config.Rand, msg.Cookie[:])
 	log.SetFlags(log.Lshortfile)
 	log.Printf("Cookie is %x\n", msg.Cookie[:])
 	isServer := len(t.hostKeys) > 0
@@ -681,13 +682,16 @@ func (t *handshakeTransport) server(kex kexAlgorithm, magics *handshakeMagics) (
 }
 
 func (t *handshakeTransport) client(kex kexAlgorithm, magics *handshakeMagics) (*kexResult, error) {
+	log.SetFlags(log.Lshortfile)
 	result, err := kex.Client(t.conn, t.config.Rand, magics)
 	if err != nil {
 		return nil, err
 	}
-	log.SetFlags(log.Lshortfile)
+
+	log.Printf("kexResult H is %x, K is %x\n\n", result.H, result.K)
+
 	hostKey, err := ParsePublicKey(result.HostKey)
-	log.Printf("hostKey is %x\n", hostKey)
+	log.Printf("hostKey is %x\n", hostKey.Marshal())
 	if err != nil {
 		return nil, err
 	}
