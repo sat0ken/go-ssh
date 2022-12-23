@@ -136,3 +136,13 @@ type ECDHEKeyExchaneReply struct {
 		HostSignature           []byte
 	}
 }
+
+// 7.2. Output from Key Exchange
+type EncryptionSSHKeys struct {
+	InitialIvClientToServer     []byte
+	InitialIvServerToClient     []byte
+	EncryptionKeyClientToServer []byte
+	EncryptionKeyServerToClient []byte
+	IntegrityKeyClientToServer  []byte
+	IntegrityKeyServerToClient  []byte
+}

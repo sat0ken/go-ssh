@@ -267,7 +267,7 @@ func newPacketCipher(d direction, algs directionAlgorithms, kex *kexResult) (pac
 // and sessionId, as specified in RFC 4253, section 7.2.
 func generateKeyMaterial(out, tag []byte, r *kexResult) {
 	var digestsSoFar []byte
-
+	log.SetFlags(log.Lshortfile)
 	h := r.Hash.New()
 	for len(out) > 0 {
 		h.Reset()
@@ -277,8 +277,10 @@ func generateKeyMaterial(out, tag []byte, r *kexResult) {
 		if len(digestsSoFar) == 0 {
 			h.Write(tag)
 			h.Write(r.SessionID)
+			log.Printf("SessionID is %x\n", r.SessionID)
 		} else {
 			h.Write(digestsSoFar)
+			log.Printf("digestsSoFar is %x\n", digestsSoFar)
 		}
 
 		digest := h.Sum(nil)
@@ -288,7 +290,6 @@ func generateKeyMaterial(out, tag []byte, r *kexResult) {
 			digestsSoFar = append(digestsSoFar, digest...)
 		}
 	}
-	log.SetFlags(log.Lshortfile)
 	log.Printf("out is %x, tag is %s\n", out, string(tag))
 }
 

@@ -688,7 +688,7 @@ func (t *handshakeTransport) client(kex kexAlgorithm, magics *handshakeMagics) (
 		return nil, err
 	}
 
-	log.Printf("kexResult H is %x, K is %x\n\n", result.H, result.K)
+	log.Printf("kexResult H is %x, K is %x\n", result.H, result.K)
 
 	hostKey, err := ParsePublicKey(result.HostKey)
 	log.Printf("hostKey is %x\n", hostKey.Marshal())

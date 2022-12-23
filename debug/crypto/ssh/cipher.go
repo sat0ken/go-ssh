@@ -358,6 +358,7 @@ func (c *gcmCipher) writeCipherPacket(seqNum uint32, w io.Writer, rand io.Reader
 	log.Printf("writeCipherPacket. c.buf is %x, c.iv is %x, c.prefix is %x\n",
 		c.buf, c.iv, c.prefix[:])
 	c.buf = c.aead.Seal(c.buf[:0], c.iv, c.buf, c.prefix[:])
+	log.Printf("Sealed packet is %x\n", c.buf)
 	if _, err := w.Write(c.buf); err != nil {
 		return err
 	}
@@ -395,8 +396,8 @@ func (c *gcmCipher) readCipherPacket(seqNum uint32, r io.Reader) ([]byte, error)
 	}
 
 	log.SetFlags(log.Lshortfile)
-    log.Println("readCipherPacket(gcmCipher) aead.Open")
-    log.Printf("readCipherPacket(gcmCipher) buf[:0] is %x, iv is %x, buf is %x, prefix is %x\n", c.buf[:0], c.iv, c.buf, c.prefix[:])
+	log.Println("readCipherPacket(gcmCipher) aead.Open")
+	log.Printf("readCipherPacket(gcmCipher) buf[:0] is %x, iv is %x, buf is %x, prefix is %x\n", c.buf[:0], c.iv, c.buf, c.prefix[:])
 	plain, err := c.aead.Open(c.buf[:0], c.iv, c.buf, c.prefix[:])
 	if err != nil {
 		return nil, err
