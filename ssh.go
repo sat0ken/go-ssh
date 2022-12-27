@@ -162,7 +162,7 @@ func NewAEAD(key []byte) cipher.AEAD {
 
 func EncryptPacket(aead cipher.AEAD, packet, iv, prefix []byte) (cipherpacket []byte) {
 	// パケットを暗号化
-	aead.Seal(cipherpacket, iv, packet, prefix)
+	cipherpacket = aead.Seal(cipherpacket, iv, packet, prefix)
 	return cipherpacket
 }
 
