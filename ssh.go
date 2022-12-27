@@ -2,8 +2,11 @@ package gossh
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	"fmt"
 	"golang.org/x/crypto/curve25519"
+	"log"
 )
 
 func ParseSSHPacket(recv []byte) (binaryPacket []BinaryPacket) {
@@ -149,4 +152,25 @@ func CreateSecret(clientPriv, serverPub [32]byte) (secret [32]byte) {
 	fmt.Printf("client is %x, server is %x\n", clientPriv, serverPub)
 	fmt.Printf("secret is %x\n", secret)
 	return secret
+}
+
+func NewAEAD(key []byte) cipher.AEAD {
+	c, _ := aes.NewCipher(key)
+	aead, _ := cipher.NewGCM(c)
+	return aead
+}
+
+func EncryptPacket(aead cipher.AEAD, packet, iv, prefix []byte) (cipherpacket []byte) {
+	// パケットを暗号化
+	aead.Seal(cipherpacket, iv, packet, prefix)
+	return cipherpacket
+}
+
+func DecryptPacket(aead cipher.AEAD, cipherpacket, iv, prefix []byte) []byte {
+	// パケットを復号化
+	plaintext, err := aead.Open(nil, iv, cipherpacket, prefix)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return plaintext
 }
