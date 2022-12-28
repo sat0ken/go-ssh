@@ -14,6 +14,7 @@ const (
 )
 
 var ClientSSHVersionString = []byte(`SSH-2.0-OpenSSH_8.9p1 Ubuntu-3`)
+var ServiceRequestStringUserAuth = []byte(`ssh-userauth`)
 
 type SSHPacket struct {
 	RawPacket      []byte
@@ -145,4 +146,11 @@ type EncryptionSSHKeys struct {
 	EncryptionKeyServerToClient []byte
 	IntegrityKeyClientToServer  []byte
 	IntegrityKeyServerToClient  []byte
+}
+
+// 10. Service Request
+type MessageTransport struct {
+	MessageCode       []byte
+	ServiceNameLength []byte
+	ServiceName       []byte
 }
