@@ -11,6 +11,9 @@ const (
 	SSH_MSG_NEWKey                = 21
 	SSH_MSG_ECDHKey_ExchangeInit  = 30
 	SSH_MSG_ECDHKey_ExchangeReply = 31
+	SSH_MSG_USERAUTH_REQUEST      = 50
+	SSH_MSG_USERAUTH_FAILURE      = 51
+	SSH_MSG_USERAUTH_SUCCESS      = 52
 )
 
 var ClientSSHVersionString = []byte(`SSH-2.0-OpenSSH_8.9p1 Ubuntu-3`)
@@ -153,4 +156,19 @@ type MessageTransport struct {
 	MessageCode       []byte
 	ServiceNameLength []byte
 	ServiceName       []byte
+}
+
+// RFC4252
+// 5. Authentication Requests
+type UserAuthenticationRequest struct {
+	MessageCode       []byte
+	UsernameLength    []byte
+	Username          []byte
+	ServiceNameLength []byte
+	ServiceName       []byte
+	MethodNameLength  []byte
+	MethodName        []byte
+	ChangePassword    []byte
+	PasswordLength    []byte
+	Password          []byte
 }

@@ -187,10 +187,12 @@ func NewAEAD(key []byte) cipher.AEAD {
 	return aead
 }
 
-func EncryptPacket(aead cipher.AEAD, packet, iv, prefix []byte) (cipherpacket []byte) {
+func EncryptPacket(aead cipher.AEAD, packet, iv []byte) (cipherpacket []byte) {
 	// パケットを暗号化
-	cipherpacket = intTo4byte(len(packet))
+	prefix := intTo4byte(len(packet))
+	fmt.Printf("EncryptPacket iv is %x, packet is %x, prefix is %x\n", iv, packet, prefix)
 	cipherpacket = aead.Seal(cipherpacket, iv, packet, prefix)
+	cipherpacket = append(prefix, cipherpacket...)
 
 	return cipherpacket
 }
@@ -238,6 +240,13 @@ func CreateEncryptionSSHKeys(K, H []byte) (enckeys EncryptionSSHKeys) {
 	}
 
 	return enckeys
+}
+
+// IVをインクリメントする
+func IncrementIV(iv []byte) []byte {
+	length := len(iv)
+	iv[length-1] = iv[length-1] + 1
+	return iv
 }
 
 // 10. Service Request
