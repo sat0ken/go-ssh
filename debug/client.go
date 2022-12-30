@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"runtime"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -20,6 +22,24 @@ func (zeroSource) Read(b []byte) (n int, err error) {
 	return len(b), nil
 }
 
+func getSigner() ssh.Signer {
+	var pkeyfile string
+	if runtime.GOOS == "windows" {
+		pkeyfile = filepath.Join(os.Getenv("USERPROFILE"), ".ssh", "id_rsa")
+	} else {
+		pkeyfile = filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa")
+	}
+	key, err := os.ReadFile(pkeyfile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	signer, err := ssh.ParsePrivateKey(key)
+	if err != nil {
+		log.Fatalf("unable to parse private key: %v", err)
+	}
+	return signer
+}
+
 func main() {
 	//var hostKey ssh.PublicKey
 	// An SSH client is represented with a ClientConn.
@@ -33,6 +53,7 @@ func main() {
 		},
 		User: os.Getenv("user"),
 		Auth: []ssh.AuthMethod{
+			// ssh.PublicKeys(getSigner()),
 			ssh.Password(os.Getenv("password")),
 		},
 		//HostKeyCallback: ssh.FixedHostKey(hostKey),
