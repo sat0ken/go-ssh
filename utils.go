@@ -15,7 +15,6 @@ func sumByteArr(arr []byte) uint {
 			sum += uint(binary.BigEndian.Uint16(arr[i:]))
 		}
 	}
-	//fmt.Printf("0x%x : %b\n", sum, sum)
 	return sum
 }
 

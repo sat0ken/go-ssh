@@ -5,6 +5,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
 	"golang.org/x/crypto/curve25519"
 	"log"
@@ -192,6 +193,7 @@ func EncryptPacket(aead cipher.AEAD, packet, iv []byte) (cipherpacket []byte) {
 	prefix := intTo4byte(len(packet))
 	fmt.Printf("EncryptPacket iv is %x, packet is %x, prefix is %x\n", iv, packet, prefix)
 	cipherpacket = aead.Seal(cipherpacket, iv, packet, prefix)
+	// 先頭にPacket Lengthをセット
 	cipherpacket = append(prefix, cipherpacket...)
 
 	return cipherpacket
@@ -245,7 +247,16 @@ func CreateEncryptionSSHKeys(K, H []byte) (enckeys EncryptionSSHKeys) {
 // IVをインクリメントする
 func IncrementIV(iv []byte) []byte {
 	length := len(iv)
-	iv[length-1] = iv[length-1] + 1
+	// 末尾2byteを整数にする
+	src := binary.BigEndian.Uint16(iv[length-2:])
+	result := make([]byte, 2)
+	// +1する
+	binary.BigEndian.PutUint16(result, src+1)
+
+	// ivにセット
+	iv[length-2] = result[0]
+	iv[length-1] = result[1]
+
 	return iv
 }
 
