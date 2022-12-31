@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"gossh"
+	"os"
 )
 
 // 固定
@@ -88,17 +89,30 @@ func main() {
 
 	enckey := gossh.CreateEncryptionSSHKeys(K, H)
 
-	fmt.Printf("EncryptionKeyClientToServer %x\n", enckey.EncryptionKeyClientToServer)
-	fmt.Printf("EncryptionKeyServerToClient %x\n", enckey.EncryptionKeyServerToClient)
+	//fmt.Printf("EncryptionKeyClientToServer %x\n", enckey.EncryptionKeyClientToServer)
+	//fmt.Printf("EncryptionKeyServerToClient %x\n", enckey.EncryptionKeyServerToClient)
 
 	aead := gossh.NewAEAD(enckey.EncryptionKeyClientToServer)
 
 	encpaket := gossh.EncryptPacket(aead,
 		gossh.StrtoByte("0e050000000c7373682d75736572617574680000000000000000000000000000"),
-		enckey.InitialIvClientToServer, gossh.StrtoByte("00000020"))
+		enckey.InitialIvClientToServer)
 
 	fmt.Printf("enc packet is %x\n", encpaket)
 
-	msgtype, i := gossh.ParseBinaryPacketPayload(gossh.StrtoByte("060000000c7373682d757365726175746802fb5fb6f66728e2c1500c3e8be8"))
-	fmt.Printf("%+v, %+v\n", msgtype, i)
+	plain := gossh.DecryptPacket(gossh.NewAEAD(enckey.EncryptionKeyServerToClient),
+		gossh.StrtoByte("e120a35130e1588802efd2a6fb91e9800ec95429b90df024123f55716221e70286da33b0af9ac83281a0731748bc9a28"),
+		gossh.IncrementIV(enckey.InitialIvServerToClient),
+		gossh.StrtoByte("00000020"))
+	fmt.Printf("plain is %x\n", plain)
+
+	userauth := gossh.NewUserAuthenticationRequest([]byte(`root`), []byte(os.Getenv("password")))
+	userauth = gossh.AddPaddingPaket(userauth)
+	fmt.Printf("user auth is %x\n", userauth)
+
+	encpaket = gossh.EncryptPacket(aead,
+		userauth,
+		gossh.StrtoByte("f67194cbb4355d3e50ce1dbe"))
+	fmt.Printf("enc packet is %x\n", encpaket)
+
 }

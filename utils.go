@@ -1,6 +1,7 @@
 package gossh
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -87,4 +88,10 @@ func noRandomByte(length int) []byte {
 func CopyTo32Byte(src []byte) (dst [32]byte) {
 	copy(dst[:], src)
 	return dst
+}
+
+func WriteBuffer(b bytes.Buffer, packet []byte) bytes.Buffer {
+	b.Write(intTo4byte(len(packet)))
+	b.Write(packet)
+	return b
 }
